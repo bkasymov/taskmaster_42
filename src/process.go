@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+/***
+ * Контроллер используется для остановки / запуска процессов
+ * chans - каналы для передачи информации о том, какие каналы остановить или запустить
+ */
+
 type Process struct {
 	Name         string
 	Conf         Config
@@ -20,6 +25,10 @@ type Process struct {
 }
 
 type ProcExitCode int
+
+/***
+ * Статусы процессов
+ */
 
 const (
 	ProcRunning = "running"
@@ -39,12 +48,20 @@ const (
 	ProcExitConfErr
 }
 
-func ProcessContainer(ctx context.Context, process *Process, wg *sync.WaitGroup,
-	envlock *chan interface{}, doneChan chan *Process) {
-	// Defer wg.Done mean that the function will be executed at the end of the function
-	defer wg.Done()
+/***
+ * ProcessContainer - функция, которая запускает процесс и обрабатывает его результат (запускать в отдельной горутине)
+ */
 
-	// When process has done its job, it will send itself to doneChan
+func ProcessContainer(
+	ctx context.Context,
+	process *Process,
+	wg *sync.WaitGroup,
+	envlock *chan interface{},
+	doneChan chan *Process) {
+
+	// Когда процесс завершится, сообщаем о завершении в канал doneChan и уменьшаем счетчик wg
+	// defer - выполняется в конце функции (после return) и позволяет избежать дублирования кода в случае ошибки в функции (например, в случае panic)
+	defer wg.Done()
 	defer func() {
 		doneChan <- process
 	}()
