@@ -1,5 +1,5 @@
 programs:
-  ls1:
+  ls_test:
     cmd: ls
     args:
       - -l
@@ -23,7 +23,7 @@ programs:
       STARTED_BY: taskmaster
       ANSWER: 42
 
-  ls2:
+  ls_test2:
     cmd: ls
     numprocs: 8
     umask: 077

@@ -5,20 +5,25 @@ import (
 	"sync"
 )
 
+//
+//import (
+//	"context"
+//	"sync"
+//)
+
 type controller struct {
 	chans ProcChannels
 }
 
-/***
- * Контроллер используется для остановки / запуска процессов
- * chans - каналы для передачи информации о том, какие каналы остановить или запустить
- * newPros - канал для запуска новых процессов
- * oldPros - канал для остановки старых процессов
- * Killall - канал для остановки всех процессов
- * DoneChan - канал для завершения процессов
- * ProcChannels - используется для передачи информации о том, какие каналы остановить или запустить
- */
-
+// /***
+// * Контроллер используется для остановки / запуска процессов
+// * chans - каналы для передачи информации о том, какие каналы остановить или запустить
+// * newPros - канал для запуска новых процессов
+// * oldPros - канал для остановки старых процессов
+// * Killall - канал для остановки всех процессов
+// * DoneChan - канал для завершения процессов
+// * ProcChannels - используется для передачи информации о том, какие каналы остановить или запустить
+// */
 type ProcChannels struct {
 	newPros  chan *Process
 	oldPros  chan *Process
@@ -26,10 +31,9 @@ type ProcChannels struct {
 	DoneChan chan *Process
 }
 
-/***
- * Инициализация каналов для передачи информации о том, какие каналы остановить или запустить
- */
-
+// /***
+// * Инициализация каналов для передачи информации о том, какие каналы остановить или запустить
+// */
 func (p *ProcChannels) init() {
 	p.newPros = make(chan *Process)
 	p.oldPros = make(chan *Process)
@@ -37,20 +41,19 @@ func (p *ProcChannels) init() {
 	p.DoneChan = make(chan *Process)
 }
 
-/***
- * Запуск контроллера процессов
- * waitchan - канал для ожидания завершения всех процессов
- * maplock - блокировка для cancelMap (map[string]context.CancelFunc)
- * envlock - блокировка для env (map[string]string)
- * ctx - контекст для отмены процессов
- * cancelMap - процессы и функции отмены
- * wg - ожидание завершения всех процессов
- * doneChan - канал для отслеживания завершения процессов
- * newPros - канал для запуска новых процессов
- * oldPros - канал для остановки процессов
- * Killall - канал для остановки всех процессов
- */
-
+// /***
+// * Запуск контроллера процессов
+// * waitchan - канал для ожидания завершения всех процессов
+// * maplock - блокировка для cancelMap (map[string]context.CancelFunc)
+// * envlock - блокировка для env (map[string]string)
+// * ctx - контекст для отмены процессов
+// * cancelMap - процессы и функции отмены
+// * wg - ожидание завершения всех процессов
+// * doneChan - канал для отслеживания завершения процессов
+// * newPros - канал для запуска новых процессов
+// * oldPros - канал для остановки процессов
+// * Killall - канал для остановки всех процессов
+// */
 func (c *controller) run(waitchan chan interface{}) {
 	var wg sync.WaitGroup
 	maplock := make(chan interface{}, 1)
@@ -79,9 +82,9 @@ func (c *controller) run(waitchan chan interface{}) {
 	}
 }
 
-/***
- * Проверка завершения процессов
- */
+// /***
+// * Проверка завершения процессов
+// */
 func (c *controller) checkDoneChan(cancelMap *map[string]context.CancelFunc, maplock *chan interface{}) {
 	for {
 		done := <-c.chans.DoneChan
@@ -91,10 +94,9 @@ func (c *controller) checkDoneChan(cancelMap *map[string]context.CancelFunc, map
 	}
 }
 
-/***
- * Создание процесса и запуск его в отдельной горутине (если процесса с таким именем нет)
- */
-
+// /***
+// * Создание процесса и запуск его в отдельной горутине (если процесса с таким именем нет)
+// */
 func (c *controller) createProcess(newPros *Process, ctx *context.Context, cancelMap *map[string]context.CancelFunc, maplock *chan interface{}, envlock *chan interface{}, wg *sync.WaitGroup) {
 	<-*maplock
 	if _, ok := (*cancelMap)[newPros.Name]; ok {
@@ -103,15 +105,14 @@ func (c *controller) createProcess(newPros *Process, ctx *context.Context, cance
 		logger.Println("Running process:", newPros.Name)
 		*ctx, (*cancelMap)[newPros.Name] = context.WithCancel(*ctx)
 		wg.Add(1)
-		go ProcessContainer(*ctx, newPros, wg, envlock, c.chans.DoneChan)
+		//go ProcessContainer(*ctx, newPros, wg, envlock, c.chans.DoneChan)
 	}
 	*maplock <- 1
 }
 
-/***
- * Остановка процесса (если процесс с таким именем есть)
- */
-
+// /***
+// * Остановка процесса (если процесс с таким именем есть)
+// */
 func (c *controller) stopProcess(oldPros *Process, cancelMap *map[string]context.CancelFunc, maplock *chan interface{}) {
 	logger.Println("Canceling process:", oldPros.Name)
 	<-*maplock
@@ -124,14 +125,13 @@ func (c *controller) stopProcess(oldPros *Process, cancelMap *map[string]context
 	*maplock <- 1
 }
 
-/***
- * Остановка всех процессов (если процесс с таким именем есть) и ожидание завершения всех процессов (wg.Wait()) и завершение работы контроллера (waitchan <- 1)
- * cancelMap - процессы и функции отмены
- * maplock - блокировка для cancelMap (map[string]context.CancelFunc)
- * wg - ожидание завершения всех процессов
- * waitchan - канал для ожидания завершения всех процессов
- */
-
+// /***
+// * Остановка всех процессов (если процесс с таким именем есть) и ожидание завершения всех процессов (wg.Wait()) и завершение работы контроллера (waitchan <- 1)
+// * cancelMap - процессы и функции отмены
+// * maplock - блокировка для cancelMap (map[string]context.CancelFunc)
+// * wg - ожидание завершения всех процессов
+// * waitchan - канал для ожидания завершения всех процессов
+// */
 func (c *controller) killAll(cancelMap *map[string]context.CancelFunc, maplock *chan interface{}, wg *sync.WaitGroup, waitchan chan interface{}) {
 	logger.Println("Killing all processes")
 	<-*maplock

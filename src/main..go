@@ -26,21 +26,23 @@ func main() {
 	}
 
 	ctrl := controller{}
+	fmt.Println(ctrl)
 	ctrl.chans.init()
 	waitchan := make(chan interface{})
-	go ctrl.run(waitchan)
+	go ctrl.run(waitchan) // запускаем контроллер в отдельной горутине (потоке) и передаем канал для ожидания завершения работы контроллера (waitchan) в качестве аргумента функции run (см. controller.go)
 
 	confs, err := updateConfig(ctrl.chans)
-	if err != nil {
-		logger.Println("Unable to load config:", err)
-		return
-	}
-
-	err = runUI(confs, ctrl.chans)
-	if err != nil {
-		logger.Println("Unable to run visualizer. Exiting")
-	}
-	cleanupProcesses(ctrl.chans, waitchan)
+	fmt.Println(confs) // TODO убрать
+	//if err != nil {
+	//	logger.Println("Unable to load config:", err)
+	//	return
+	//}
+	//
+	//err = runUI(confs, ctrl.chans)
+	//if err != nil {
+	//	logger.Println("Unable to run visualizer. Exiting")
+	//}
+	//cleanupProcesses(ctrl.chans, waitchan)
 }
 
 /***
@@ -82,16 +84,16 @@ func parseFlags() error {
  * updateConfig is a function that updates the config file and returns the new config.
  */
 
-func updateConfig(chans *Channels) (map[string][]*Process, error) {
+func updateConfig(chans ProcChannels) (map[string][]*Process, error) {
 	confs, err := UpdateConfig(configFile, map[string][]*Process{}, chans)
 	return confs, err
 }
 
-/***
- * cleanupProcesses is a function that cleans up processes and waits for them to finish before exiting the program.
- */
-func cleanupProcesses(chans *Channels, waitchan chan interface{}) {
-	logger.Println("Cleaning up processes")
-	close(chans.Killall)
-	<-waitchan
-}
+// /***
+// * cleanupProcesses is a function that cleans up processes and waits for them to finish before exiting the program.
+// */
+//func cleanupProcesses(chans *Channels, waitchan chan interface{}) {
+//	logger.Println("Cleaning up processes")
+//	close(chans.Killall)
+//	<-waitchan
+//}

@@ -1,9 +1,40 @@
 programs:
-  ls:
+  ls1:
     cmd: ls
-    numprocs: 2
     args:
       - -l
-      - /tmp/
-    stdout: /tmp/ls.stdout
-    stderr: /tmp/ls.stderr
+      - -R
+      - /
+    numprocs: 1
+    umask: 022
+    workingdir: /tmp
+    autostart: true
+    autorestart: sometimes
+    exitcodes:
+      - 0
+      - 2
+    startretries: 1
+    starttime: 5
+    stopsignal: TERM
+    stoptime: 10
+    stdout: /tmp/ls1.stdout
+    stderr: /tmp/ls1.stderr
+    env:
+      STARTED_BY: taskmaster
+      ANSWER: 42
+
+  ls2:
+    cmd: ls
+    numprocs: 8
+    umask: 077
+    workingdir: /tmp
+    autostart: true
+    autorestart: sometimes
+    exitcodes:
+      - 0
+    startretries: 3
+    starttime: 5
+    stopsignal: USR1
+    stoptime: 10
+    stdout: /tmp/ls2.stdout
+    stderr: /tmp/ls2.stderr
