@@ -238,19 +238,3 @@ func ParsePrograms(file string) (map[string]Config, error) {
 
 	return configs, nil
 }
-
-func UpdateConfig(
-	filename string,
-	last ProcessMap,
-	pc ProcChannels) (ProcessMap, error) {
-
-	new, err := ParsePrograms(filename)
-	if err != nil {
-		logger.Println("Error parsing config file:", err)
-		return last, err
-	}
-	newProcesses := ConfigToProcess(new)
-	logger.Println("Apply new configs")
-	return nil, nil
-
-}

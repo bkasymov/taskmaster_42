@@ -1,15 +1,10 @@
 package main
 
-import "time"
+import (
+	"strconv"
+	"time"
+)
 
-// import (
-//
-//	"context"
-//	"sync"
-//	"time"
-//
-// )
-//
 // /***
 // * Контроллер используется для остановки / запуска процессов
 // * chans - каналы для передачи информации о том, какие каналы остановить или запустить
@@ -51,6 +46,40 @@ const (
 	ProcExitKilled
 	ProcExitConfErr
 )
+
+/*
+Проходится по каждому конфигу. Для каждого конфига создает процесс и добавляет его в карту процессов в цикле
+в зависимости от количества процессов, которые нужно запустить.
+Сначала создаёт хранилище новых процессов в map, где ключ - имя процесса, а значение - характеристики процесса.
+*/
+func CreateProcesses(conf Config, num int) []*Process {
+	processSlice := make([]*Process, num)
+	for i := 0; i < num; i++ {
+		process := &Process{
+			Name:     conf.Name + " - " + strconv.Itoa(i),
+			Conf:     conf,
+			Status:   ProcStopped,
+			Exit:     -1, // Exit -1 означает, что процесс еще не запускался
+			Crashes:  0,
+			Restarts: 0,
+		}
+		processSlice[i] = process
+	}
+	return processSlice
+}
+
+func SyncProcessesWithConfigs(configs map[string]Config) ProcessMap {
+	pMap := ProcessMap{}
+	for _, conf := range configs {
+		processSlice := CreateProcesses(conf, conf.NumProcs)
+		pMap[conf.Name] = processSlice
+	}
+	return pMap
+}
+
+//func (p Process) String() string {
+//	return fmt.Sprintf("%s %d %s", p.Name, p.Pid, p.Status)
+//}
 
 ///***
 // * ProcessContainer - функция, которая запускает процесс и обрабатывает его результат (запускать в отдельной горутине)

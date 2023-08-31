@@ -31,12 +31,12 @@ func main() {
 	waitchan := make(chan interface{})
 	go ctrl.run(waitchan) // запускаем контроллер в отдельной горутине (потоке) и передаем канал для ожидания завершения работы контроллера (waitchan) в качестве аргумента функции run (см. controller.go)
 
-	confs, err := updateConfig(ctrl.chans)
-	fmt.Println(confs) // TODO убрать
-	//if err != nil {
-	//	logger.Println("Unable to load config:", err)
-	//	return
-	//}
+	confs, err := UpdateConfig(configFile, map[string][]*Process{}, ctrl.chans)
+	if err != nil {
+		logger.Println("Unable to load config:", err)
+		return
+	}
+	fmt.Println(confs)
 	//
 	//err = runUI(confs, ctrl.chans)
 	//if err != nil {
@@ -78,15 +78,6 @@ func parseFlags() error {
 	}
 	configFile = flag.Arg(0)
 	return nil
-}
-
-/***
- * updateConfig is a function that updates the config file and returns the new config.
- */
-
-func updateConfig(chans ProcChannels) (map[string][]*Process, error) {
-	confs, err := UpdateConfig(configFile, map[string][]*Process{}, chans)
-	return confs, err
 }
 
 // /***
