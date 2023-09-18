@@ -24,25 +24,21 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
+	// init controller and channels for communication between controller and processes (see controller.go)
 	ctrl := controller{}
-	fmt.Println(ctrl)
 	ctrl.chans.init()
-	waitchan := make(chan interface{})
-	go ctrl.run(waitchan) // запускаем контроллер в отдельной горутине (потоке) и передаем канал для ожидания завершения работы контроллера (waitchan) в качестве аргумента функции run (см. controller.go)
 
-	confs, err := UpdateConfig(configFile, map[string][]*Process{}, ctrl.chans)
+	waitchan := make(chan interface{}) // Создаем канал для ожидания завершения работы контроллера (waitchan)
+
+	//TODO конфиги обновляются. Теперь надо запустить процессы
+	go ctrl.run(waitchan) // Запускаем контроллер в отдельной горутине (потоке) и передаем канал для ожидания завершения работы контроллера (waitchan) в качестве аргумента функции run (см. controller.go)
+	// Обновляем конфигурацию либо читаем в первый раз (см. update.go)
+	processes, err := ReloadConfig(configFile, map[string][]*Process{}, ctrl.chans)
 	if err != nil {
 		logger.Println("Unable to load config:", err)
 		return
 	}
-	fmt.Println(confs)
-	//
-	//err = runUI(confs, ctrl.chans)
-	//if err != nil {
-	//	logger.Println("Unable to run visualizer. Exiting")
-	//}
-	//cleanupProcesses(ctrl.chans, waitchan)
+	fmt.Println(processes)
 }
 
 /***
@@ -88,3 +84,10 @@ func parseFlags() error {
 //	close(chans.Killall)
 //	<-waitchan
 //}
+
+//
+//err = runUI(confs, ctrl.chans)
+//if err != nil {
+//	logger.Println("Unable to run visualizer. Exiting")
+//}
+//cleanupProcesses(ctrl.chans, waitchan)

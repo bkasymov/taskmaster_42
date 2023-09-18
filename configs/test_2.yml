@@ -5,7 +5,7 @@ programs:
       - -l
       - -R
       - /
-    numprocs: 1
+    numprocs: 2
     umask: 022
     workingdir: /tmp
     autostart: true
