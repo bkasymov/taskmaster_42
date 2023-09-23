@@ -11,25 +11,30 @@ const (
 )
 
 func runGUI(processes ProcessMap, channels ProcChannels) error {
-	gui, err := gocui.NewGUI(gocui.OutputNormal)
+	clientGUI, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
 		logger.Println("Failed to create a GUI object:", err)
 		return err
 	}
-	defer gui.Close()
+	defer clientGUI.Close()
 
-	gui.Cursor = true
+	clientGUI.Cursor = true
 
-	gui.SetManagerFunc(layout)
-	setKeyBindings(&processes, channels, gui)
+	clientGUI.SetManagerFunc(layout)
+	setKeyBindings(&processes, channels, clientGUI)
 	return nil
 }
 
+func layout(gui *gocui.Gui) error {
+
+}
+
+//
 // "" mean all view windows in the GUI
 // ModNone means no modifier key is pressed (Ctrl, Alt, etc.)
 // If client presses Ctrl+C, then quit the GUI
 // we write what key is pressed, and what function is called
-
+//
 func setKeyBindings(processes *ProcessMap, channels ProcChannels, gui interface{}) {
 
 	err := gui.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone,
@@ -74,10 +79,11 @@ func wrap(processMap *ProcessMap, processChannels ProcChans) func(gui *gocui.Gui
 	}
 }
 
-func getCommand(line string, processMap *ProcessMap, channels interface{}, view *gocui.View) {
-
-}
-
-func quit(gui *gocui.Gui, view *gocui.View) error {
-	return gocui.ErrQuit
-}
+//
+//func getCommand(line string, processMap *ProcessMap, channels interface{}, view *gocui.View) {
+//
+//}
+//
+//func quit(gui *gocui.Gui, view *gocui.View) error {
+//	return gocui.ErrQuit
+//}

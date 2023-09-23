@@ -38,7 +38,7 @@ func main() {
 		logger.Println("Unable to load config:", err)
 		return
 	}
-	err = runGUI(processes, ctrl.chans)
+	// err = runGUI(processes, ctrl.chans)
 
 	fmt.Println(processes)
 }
