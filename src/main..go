@@ -38,8 +38,10 @@ func main() {
 		logger.Println("Unable to load config:", err)
 		return
 	}
-	// err = runGUI(processes, ctrl.chans)
-
+	err = runGUI(processes, ctrl.chans)
+	if err != nil {
+		logger.Println("Unable to run visualizer. Exiting")
+	}
 	fmt.Println(processes)
 }
 

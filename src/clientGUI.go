@@ -1,13 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"github.com/jroimartin/gocui"
+	"github.com/pkg/errors"
 )
 
 const (
-	lw = 40
-
-	ih = 4
+	listViewWidth     = 40 // Ширина представления списка
+	inputOutputHeight = 3  // Высота представлений "input" и "output"
 )
 
 func runGUI(processes ProcessMap, channels ProcChannels) error {
@@ -19,71 +20,96 @@ func runGUI(processes ProcessMap, channels ProcChannels) error {
 	defer clientGUI.Close()
 
 	clientGUI.Cursor = true
+	clientGUI.SetManagerFunc(layout) // Устанавливаем функцию-обработчик для размещения представлений, чтобы в случае обновления заново перерисовалось
 
-	clientGUI.SetManagerFunc(layout)
-	setKeyBindings(&processes, channels, clientGUI)
+	setKeyBindings(&processes, channels, clientGUI) // Устанавливаем обработчики клавиш
+
+	terminalWidth, terminalHeight := clientGUI.Size()
+
+	createViews(clientGUI, terminalWidth, terminalHeight)
+	go
+
 	return nil
 }
 
-func layout(gui *gocui.Gui) error {
+func createViews(gui *gocui.Gui, width int, height int) interface{} {
 
+	terminalWidth, terminalHeight := gui.Size()
+
+	{
+		// Создаем представление "list" для списка процессов
+		listView, err := gui.SetView("list", 0, 0, listViewWidth, terminalHeight-inputOutputHeight-1)
+		if err != nil && err != gocui.ErrUnknownView {
+			return errors.Wrap(err, "Failed to create list view")
+		}
+		listView.Title = "List"
+		listView.FgColor = gocui.ColorCyan // TOOD change colour
+
+		// Создаем представление "output" для вывода результатов выполнения команд
+	}
+
+	{
+		outputView, err := gui.SetView("output", listViewWidth+1, 0, terminalWidth-1, terminalHeight-inputOutputHeight-1)
+		if err != nil && err != gocui.ErrUnknownView {
+			return errors.Wrap(err, "Failed to create output view")
+		}
+		outputView.Title = "Output"
+		outputView.FgColor = gocui.ColorDefault // TOOD change colour
+
+		outputView.Autoscroll = true // Включаем автопрокрутку
+		_, err = fmt.Fprintf(outputView, "Ctrl-C to quit:\n")
+		if err != nil {
+			return errors.Wrap(err, "Failed to write to output view")
+		}
+	}
+	{
+		// Создаем представление "input" для ввода команд
+		inputView, err := gui.SetView("input", listViewWidth+1, terminalHeight-inputOutputHeight, terminalWidth-1, terminalHeight-1)
+		if err != nil && err != gocui.ErrUnknownView {
+			return errors.Wrap(err, "Failed to create input view")
+		}
+		inputView.Title = "Input"
+		inputView.FgColor = gocui.ColorBlue // TOOD change colour
+	}
+	return nil
 }
 
-//
-// "" mean all view windows in the GUI
-// ModNone means no modifier key is pressed (Ctrl, Alt, etc.)
-// If client presses Ctrl+C, then quit the GUI
-// we write what key is pressed, and what function is called
-//
-func setKeyBindings(processes *ProcessMap, channels ProcChannels, gui interface{}) {
-
+func setKeyBindings(p *ProcessMap, channels ProcChannels, gui *gocui.Gui) {
+	// Устанавливаем обработчик для комбинации клавиш Ctrl+C
 	err := gui.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone,
 		func(gui *gocui.Gui, view *gocui.View) error {
 			return quit(gui, view)
 		})
 	if err != nil {
-		logger.Println("Cannot bind the quit key", err)
+		errors.Wrap(err, "Failed to set key binding")
 		return
 	}
-	err = gui.SetKeybinding("input", gocui.KeyEnter, gocui.ModNone, wrap(processes, channels))
+
+	// Устанавливаем обработчик для клавиши Enter
+	err = gui.SetKeybinding("input", gocui.KeyEnter, gocui.ModNone, wrap(p, channels))
 	if err != nil {
-		logger.Println("Cannot bind the enter key:", err)
+		errors.Wrap(err, "Failed to set key binding")
 	}
 }
 
-func wrap(processMap *ProcessMap, processChannels ProcChans) func(gui *gocui.Gui, view *gocui.View) error {
-	return func(gui *gocui.Gui, view *gocui.View) error {
-		inputView, err := gui.View("input")
-		if err != nil {
-			logger.Println("Cannot get input view:", err)
-			return err
-		}
-
-		outputView, err := gui.View("output")
-		if err != nil {
-			logger.Println("Cannot get output view:", err)
-			return err
-		}
-
-		inputView.Rewind()
-		commandLine := inputView.Buffer()
-		getCommand(commandLine, processMap, processChannels, outputView)
-
-		inputView.Clear()
-
-		err = inputView.SetCursor(0, 0)
-		if err != nil {
-			logger.Println("Failed to set cursor:", err)
-		}
-		return err
-	}
+func quit(gui *gocui.Gui, view *gocui.View) error {
+	return gocui.ErrQuit
 }
 
-//
-//func getCommand(line string, processMap *ProcessMap, channels interface{}, view *gocui.View) {
-//
-//}
-//
-//func quit(gui *gocui.Gui, view *gocui.View) error {
-//	return gocui.ErrQuit
-//}
+func layout(gui *gocui.Gui) error {
+	terminalWidth, terminalHeight := gui.Size()
+
+	_, err := gui.SetView("list", 0, 0, listViewWidth, terminalHeight-inputOutputHeight-1)
+	if err != nil && err != gocui.ErrUnknownView {
+		errors.Wrap(err, "Failed to create list view")
+	}
+	_, err = gui.SetView("output", listViewWidth+1, 0, terminalWidth-1, terminalHeight-inputOutputHeight-1)
+	if err != nil && err != gocui.ErrUnknownView {
+		errors.Wrap(err, "Failed to create output view")
+	}
+	_, err = gui.SetView("input", 0, terminalHeight-inputOutputHeight, terminalWidth-1, terminalHeight-1)
+	if err != nil && err != gocui.ErrUnknownView {
+		errors.Wrap(err, "Failed to create input view")
+	}
+	return nil
+}
